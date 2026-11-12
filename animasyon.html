@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>istanbul cat Plus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@900&family=Pacifico&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --orange:#F2542D; --orange2:#FF8A4C; --teal:#17B3AA; --teal2:#6FE3D6;
+    --gray1:#9b9b9b; --gray2:#6a6a6a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:#777}
+  body{cursor:default}
+  body.idle{cursor:none}
+
+  .stage{position:fixed;inset:0;overflow:hidden;
+    background:radial-gradient(120% 90% at 50% 40%, var(--gray1) 0%, #828282 45%, var(--gray2) 100%);}
+
+  /* kart üzerindeki damla şekilleri */
+  .drop{position:absolute;width:78vmin;height:78vmin;border-radius:50% 50% 0 50%;
+    transform:rotate(45deg);opacity:0;filter:saturate(1.1)}
+  .drop::after{content:"";position:absolute;inset:8% 30% 45% 12%;border-radius:50%;
+    background:radial-gradient(closest-side, rgba(255,255,255,.55), rgba(255,255,255,0));filter:blur(6px)}
+  .drop.o{left:-14vmin;top:-30vmin;
+    background:radial-gradient(circle at 35% 30%, var(--orange2), var(--orange) 55%, #c9361a 100%)}
+  .drop.t{right:-16vmin;bottom:-34vmin;
+    background:radial-gradient(circle at 35% 30%, var(--teal2), var(--teal) 55%, #0d8a83 100%)}
+
+  .center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+  .logo{position:relative;font-size:min(13vw,24vh);color:#fff;line-height:1;
+    text-shadow:0 .03em .08em rgba(0,0,0,.18)}
+  .row{display:flex;align-items:baseline;white-space:nowrap}
+  .word{font-family:'Nunito',system-ui,sans-serif;font-weight:900;letter-spacing:-.02em;display:inline-block}
+  .kart{position:relative;margin-left:.16em}
+  .l{display:inline-block;transform-origin:50% 90%}
+  .heart{display:inline-block;width:.74em;height:.74em;margin-left:.07em;align-self:center;
+    transform:translateY(.06em);filter:drop-shadow(0 .03em .06em rgba(0,0,0,.18))}
+  .heart svg{width:100%;height:100%;display:block}
+  .plus{font-family:'Pacifico',cursive;font-size:.6em;text-align:right;
+    margin-top:-.42em;padding-right:.05em;display:block;width:max-content;margin-left:auto}
+
+  .pre{opacity:0}
+
+  /* kedi */
+  .peek{position:absolute;left:50%;transform:translateX(-50%);bottom:63%;width:1.25em;height:.95em;
+    overflow:hidden;z-index:-1;pointer-events:none}
+  .peek svg{position:absolute;left:0;bottom:0;width:100%;height:auto;display:block;transform:translateY(110%)}
+  .paws{position:absolute;inset:0;pointer-events:none;z-index:2}
+  .pw{position:absolute;bottom:58%;width:.24em;height:.15em}
+  .pw svg{width:100%;height:100%;display:block}
+  .pw.a{left:.02em}.pw.b{right:.08em}
+  .eye{transform-box:fill-box;transform-origin:center}
+  .blink .eye{animation:blink 4s infinite}
+  @keyframes blink{0%,44%,50%,100%{transform:scaleY(1)}47%{transform:scaleY(.08)}}
+  .ear{transform-box:fill-box;transform-origin:50% 100%}
+  .blink .ear.r{animation:twitch 5s 1.5s infinite}
+  @keyframes twitch{0%,90%,100%{transform:rotate(0)}93%{transform:rotate(12deg)}96%{transform:rotate(-4deg)}}
+
+  /* pençe */
+  .paw{position:fixed;left:50%;top:50%;width:36vmin;opacity:0;z-index:20;pointer-events:none;
+    filter:drop-shadow(0 1.5vmin 2.5vmin rgba(0,0,0,.35))}
+  .paw svg{width:100%;height:auto;display:block}
+  .scratch{position:fixed;inset:0;width:100%;height:100%;z-index:15;pointer-events:none}
+  .flash{position:fixed;inset:0;background:#fff;opacity:0;z-index:14;pointer-events:none}
+
+  .replay{position:fixed;right:18px;bottom:16px;z-index:30;font:600 13px system-ui,sans-serif;
+    color:#fff;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.35);border-radius:999px;
+    padding:8px 14px;cursor:pointer;transition:opacity .4s;backdrop-filter:blur(6px)}
+  body.idle .replay{opacity:0}
+  .start{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center}
+  .start button{font:700 clamp(16px,2.4vmin,26px) 'Nunito',system-ui,sans-serif;color:#fff;cursor:pointer;
+    background:rgba(0,0,0,.25);border:2px solid rgba(255,255,255,.6);border-radius:999px;padding:.7em 1.6em;backdrop-filter:blur(6px)}
+  .start small{font-weight:600;opacity:.75}
+  body.idle .start button{opacity:.35}
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <div class="drop o" id="dropO"></div>
+  <div class="drop t" id="dropT"></div>
+  <div class="center">
+    <div class="logo" id="logo"></div>
+  </div>
+</div>
+
+<svg class="scratch" id="scratch" viewBox="0 0 1600 900" preserveAspectRatio="none">
+  <g id="scratchG" opacity="0"></g>
+</svg>
+<div class="flash" id="flash"></div>
+<div class="paw" id="paw">
+  <svg viewBox="0 0 200 250">
+    <!-- tırnaklar -->
+    <g fill="#fff" stroke="#e8d9cf" stroke-width="2">
+      <path d="M30 70 Q24 40 36 18 Q42 46 50 66 Z"/>
+      <path d="M68 40 Q66 10 80 -8 Q84 22 88 38 Z"/>
+      <path d="M112 38 Q116 8 132 -8 Q130 22 132 40 Z"/>
+      <path d="M150 66 Q158 40 166 18 Q176 44 170 70 Z"/>
+    </g>
+    <g fill="#F2542D">
+      <ellipse cx="100" cy="170" rx="72" ry="62"/>
+      <circle cx="40" cy="92" r="27"/>
+      <circle cx="78" cy="58" r="27"/>
+      <circle cx="122" cy="58" r="27"/>
+      <circle cx="160" cy="92" r="27"/>
+    </g>
+    <g fill="#FFB8A8">
+      <path d="M100 135 C 70 135 55 165 62 188 C 70 210 90 200 100 200 C 110 200 130 210 138 188 C 145 165 130 135 100 135 Z"/>
+      <ellipse cx="42" cy="95" rx="13" ry="15"/>
+      <ellipse cx="79" cy="62" rx="13" ry="15"/>
+      <ellipse cx="121" cy="62" rx="13" ry="15"/>
+      <ellipse cx="158" cy="95" rx="13" ry="15"/>
+    </g>
+  </svg>
+</div>
+
+<button class="replay" id="replay">↻ Tekrar oynat</button>
+<div class="start" id="startScreen"><button id="startBtn">▶ Başlat <small>(sesli)</small></button></div>
+
+<template id="logoTpl">
+  <div class="row">
+    <span class="word f pre" id="ist">istanbul</span>
+    <span class="heart f pre" id="heart">
+      <svg viewBox="0 0 100 100">
+        <rect x="6" y="6" width="88" height="88" rx="22" fill="none" stroke="#fff" stroke-width="10"/>
+        <path d="M50 78 C 22 58 16 46 18 36 C 20 24 34 18 44 26 C 47 28 49 31 50 33 C 51 31 53 28 56 26 C 66 18 80 24 82 36 C 84 46 78 58 50 78 Z" fill="#fff"/>
+      </svg>
+    </span>
+    <span class="word kart pre" id="kart"><span class="l f" id="lk">k</span><span class="l f" id="la">a</span><span class="l f" id="lr">r</span><span class="l f" id="lt">t</span>
+      <span class="peek" id="peek">
+        <svg viewBox="0 0 220 150" id="catHead">
+          <g class="ear l"><path d="M34 82 L52 6 L104 50 Z" fill="#F2542D"/><path d="M48 66 L58 26 L86 50 Z" fill="#FFB8A8"/></g>
+          <g class="ear r"><path d="M186 82 L168 6 L116 50 Z" fill="#F2542D"/><path d="M172 66 L162 26 L134 50 Z" fill="#FFB8A8"/></g>
+          <ellipse cx="110" cy="112" rx="88" ry="70" fill="#F2542D"/>
+          <path d="M98 46 q4 12 0 22 M110 44 q0 14 0 26 M122 46 q-4 12 0 22" stroke="#c9361a" stroke-width="6" stroke-linecap="round" fill="none"/>
+          <ellipse cx="110" cy="138" rx="40" ry="24" fill="#fff4ee"/>
+          <g class="eye"><ellipse cx="76" cy="100" rx="15" ry="18" fill="#17B3AA"/><ellipse cx="76" cy="101" rx="5.5" ry="13" fill="#1b1b1b"/><circle cx="81" cy="93" r="4" fill="#fff"/></g>
+          <g class="eye"><ellipse cx="144" cy="100" rx="15" ry="18" fill="#17B3AA"/><ellipse cx="144" cy="101" rx="5.5" ry="13" fill="#1b1b1b"/><circle cx="149" cy="93" r="4" fill="#fff"/></g>
+          <path d="M102 124 h16 l-8 9 z" fill="#ff8fa0"/>
+          <path d="M110 133 q-6 9 -14 4 M110 133 q6 9 14 4" stroke="#7a2a18" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <g stroke="#fff" stroke-width="2.6" stroke-linecap="round" opacity=".9">
+            <path d="M82 130 L30 122 M82 137 L32 142"/><path d="M138 130 L190 122 M138 137 L188 142"/>
+          </g>
+        </svg>
+      </span>
+      <span class="paws">
+        <span class="pw a pre" id="pwA"><svg viewBox="0 0 48 30"><path d="M2 28 Q2 4 24 4 Q46 4 46 28 Z" fill="#F2542D"/><path d="M16 10 v10 M24 8 v12 M32 10 v10" stroke="#c9361a" stroke-width="3" stroke-linecap="round"/></svg></span>
+        <span class="pw b pre" id="pwB"><svg viewBox="0 0 48 30"><path d="M2 28 Q2 4 24 4 Q46 4 46 28 Z" fill="#F2542D"/><path d="M16 10 v10 M24 8 v12 M32 10 v10" stroke="#c9361a" stroke-width="3" stroke-linecap="round"/></svg></span>
+      </span>
+    </span>
+  </div>
+  <span class="plus f pre" id="plus">Plus</span>
+</template>
+
+<script>
+const $ = s => document.querySelector(s);
+let token = 0;
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+// 3 paralel pençe izi (sağ üstten sol alta)
+const scratchG = $('#scratchG');
+(function buildScratches(){
+  // sivri uçlu (ortası kalın) yırtık şekilleri; maske ile çizilerek açılır
+  const offs = [-80, 0, 80];
+  let defs = '<defs><filter id="gl" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="7"/></filter>';
+  let body = '';
+  offs.forEach((o,i) => {
+    const p0=[1330+o,70+o], p1=[840+o,400+o], p2=[300+o,830+o];
+    const N=48, L=[], R=[], C=[];
+    for(let k=0;k<=N;k++){
+      const t=k/N, u=1-t;
+      const x=u*u*p0[0]+2*u*t*p1[0]+t*t*p2[0], y=u*u*p0[1]+2*u*t*p1[1]+t*t*p2[1];
+      const dx=2*u*(p1[0]-p0[0])+2*t*(p2[0]-p1[0]), dy=2*u*(p1[1]-p0[1])+2*t*(p2[1]-p1[1]);
+      const len=Math.hypot(dx,dy), nx=-dy/len, ny=dx/len;
+      const w=(i===1?26:22)*Math.pow(Math.sin(Math.PI*Math.min(1,t*1.15)),.6);
+      L.push([x+nx*w,y+ny*w]); R.push([x-nx*w,y-ny*w]); C.push([x,y]);
+    }
+    const shape = 'M'+L.map(p=>p.join(',')).join('L')+'L'+R.reverse().map(p=>p.join(',')).join('L')+'Z';
+    const center = 'M'+C.map(p=>p.join(',')).join('L');
+    defs += `<mask id="m${i}" maskUnits="userSpaceOnUse" x="0" y="0" width="1600" height="900"><path class="mk" d="${center}" stroke="#fff" stroke-width="90" fill="none" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></mask>`;
+    body += `<g mask="url(#m${i})">
+      <path d="${shape}" fill="#F2542D" opacity=".7" filter="url(#gl)" transform="translate(0,4)"/>
+      <path d="${shape}" fill="#fff"/>
+      <path d="${center}" fill="none" stroke="#7a2412" stroke-width="3" opacity=".45" stroke-linecap="round"/>
+    </g>`;
+  });
+  scratchG.innerHTML = defs + '</defs>' + body;
+})();
+
+function enter(el, kf, opt){
+  el.classList.remove('pre');
+  return el.animate(kf, {fill:'backwards', easing:'cubic-bezier(.2,.8,.2,1)', ...opt});
+}
+
+function shake(el){
+  return el.animate([
+    {transform:'rotate(0)'},{transform:'rotate(-14deg)'},{transform:'rotate(11deg)'},
+    {transform:'rotate(-8deg)'},{transform:'rotate(5deg)'},{transform:'rotate(0)'}
+  ], {duration:520, easing:'ease-in-out'}).finished;
+}
+
+// harfin kopyasını oluşturup aşağı düşür
+function fallClone(el, dir=1){
+  const r = el.getBoundingClientRect();
+  const cs = getComputedStyle(el);
+  const c = document.createElement('span');
+  c.textContent = el.textContent;
+  Object.assign(c.style, {
+    position:'fixed', left:r.left+'px', top:r.top+'px', width:r.width+'px', height:r.height+'px',
+    fontFamily:cs.fontFamily, fontSize:cs.fontSize, fontWeight:cs.fontWeight, letterSpacing:cs.letterSpacing,
+    lineHeight:cs.lineHeight, color:cs.color, textShadow:cs.textShadow, zIndex:12,
+    display:'inline-block', textAlign:'center', transformOrigin:'50% 90%', pointerEvents:'none'
+  });
+  document.body.appendChild(c);
+  c.animate([
+    {transform:'translate(0,0) rotate(0)', easing:'ease-out'},
+    {transform:`translate(${-dir*0.06}em,-0.28em) rotate(${-dir*14}deg)`, offset:.2, easing:'cubic-bezier(.55,0,1,.6)'},
+    {transform:`translate(${dir*0.6}em,115vh) rotate(${dir*170}deg)`}
+  ], {duration:900}).finished.then(() => c.remove());
+}
+
+// FLIP: düzen değişince harfleri yumuşakça kaydır
+function flip(mutate, dur=650, easing='cubic-bezier(.34,1.56,.64,1)'){
+  const els = [...document.querySelectorAll('.f')];
+  const before = new Map(els.map(e => [e, e.getBoundingClientRect()]));
+  mutate();
+  els.forEach(e => {
+    if(!e.isConnected) return;
+    const b = before.get(e), a = e.getBoundingClientRect();
+    const dx = b.left - a.left, dy = b.top - a.top;
+    if(Math.abs(dx) > .5 || Math.abs(dy) > .5)
+      e.animate([{transform:`translate(${dx}px,${dy}px)`},{transform:'translate(0,0)'}],
+                {duration:dur, easing, composite:'add'});
+  });
+}
+
+async function run(){
+  const my = ++token;
+  const ok = () => my === token;
+  document.getAnimations().forEach(a => a.cancel());
+  document.querySelectorAll('body > span').forEach(s => s.remove());
+  $('#logo').innerHTML = $('#logoTpl').innerHTML;
+  const dO = $('#dropO'), dT = $('#dropT');
+  dO.style.opacity = dT.style.opacity = 0;
+
+  await document.fonts.ready;
+  if(!ok()) return;
+
+  // 1) arka plan damlaları
+  dO.animate([{opacity:0, transform:'translate(-10vmin,-10vmin) rotate(45deg) scale(.8)'},
+              {opacity:.95, transform:'rotate(45deg) scale(1)'}],
+             {duration:900, easing:'cubic-bezier(.2,.8,.2,1)', fill:'forwards'});
+  dT.animate([{opacity:0, transform:'translate(10vmin,10vmin) rotate(45deg) scale(.8)'},
+              {opacity:.95, transform:'rotate(45deg) scale(1)'}],
+             {duration:900, delay:100, easing:'cubic-bezier(.2,.8,.2,1)', fill:'forwards'});
+  await wait(200); if(!ok()) return;
+
+  // 2) istanbul ♥ kart
+  enter($('#ist'), [{opacity:0, transform:'translateY(.35em)', filter:'blur(8px)'},{opacity:1, transform:'none', filter:'blur(0)'}], {duration:500});
+  enter($('#heart'), [{opacity:0, transform:'translateY(.06em) scale(0) rotate(-30deg)'},{opacity:1, transform:'translateY(.06em) scale(1.2) rotate(6deg)', offset:.7},{opacity:1, transform:'translateY(.06em) scale(1)'}], {duration:500, delay:180});
+  enter($('#kart'), [{opacity:0, transform:'translateY(.35em)', filter:'blur(8px)'},{opacity:1, transform:'none', filter:'blur(0)'}], {duration:500, delay:340});
+  await wait(800); if(!ok()) return;
+
+  // 3) Plus yazılır
+  enter($('#plus'), [{opacity:1, clipPath:'inset(-30% 100% -30% 0)'},{opacity:1, clipPath:'inset(-30% 0 -30% 0)'}], {duration:600, easing:'cubic-bezier(.5,0,.2,1)'});
+  await wait(650); if(!ok()) return;
+  $('#heart').animate([{transform:'translateY(.06em) scale(1)'},{transform:'translateY(.06em) scale(1.18)'},{transform:'translateY(.06em) scale(1)'}],{duration:450});
+  await wait(700); if(!ok()) return;
+
+  // 4) Kedi pençesi! → vuruşla k ve r düşer, c gelir → cat
+  const lk = $('#lk'), lr = $('#lr');
+  const paw = $('#paw'), flash = $('#flash'), stage = $('#stage');
+  const P = (x,y,r,s=1) => `translate(-50%,-50%) translate(${x}vw,${y}vh) rotate(${r}deg) scale(${s})`;
+  paw.animate([
+    {opacity:1, transform:P(70,-80,-120,.9)},
+    {opacity:1, transform:P(40,-50,-128,1), offset:.4, easing:'ease-out'},
+    {opacity:1, transform:P(44,-56,-140,1.05), offset:.5, easing:'cubic-bezier(.7,0,.3,1)'},
+    {opacity:1, transform:P(-46,56,-135,1)}
+  ], {duration:620});
+  const S = 310; // vuruş anı (pençenin ekrana girdiği an)
+  setTimeout(() => {
+    if(!ok()) return;
+    flip(() => { fallClone(lk, -1); fallClone(lr, -1.5); lk.textContent = 'c'; lr.remove(); }, 550);
+    lk.animate([
+      {transform:'translateY(-2.6em) rotate(-25deg)', opacity:0},
+      {transform:'translateY(.06em) rotate(4deg) scale(1.08,.86)', opacity:1, offset:.55},
+      {transform:'translateY(-.14em) rotate(-3deg)', offset:.75},
+      {transform:'translateY(0) rotate(0)'}
+    ], {duration:650, delay:250, fill:'backwards', easing:'cubic-bezier(.3,.6,.4,1)'});
+  }, S + 120);
+  scratchG.setAttribute('opacity', 1);
+  document.querySelectorAll('#scratchG .mk').forEach((p,i) =>
+    p.animate([{strokeDashoffset:1},{strokeDashoffset:0}], {duration:260, delay:S+i*25, easing:'cubic-bezier(.45,0,.4,1)', fill:'forwards'}));
+  flash.animate([{opacity:0},{opacity:.35},{opacity:0}], {duration:350, delay:S+120});
+  stage.animate([
+    {transform:'translate(0,0)'},{transform:'translate(-1.2vmin,1vmin)'},{transform:'translate(1vmin,-.8vmin)'},
+    {transform:'translate(-.6vmin,.5vmin)'},{transform:'translate(.3vmin,-.2vmin)'},{transform:'translate(0,0)'}
+  ], {duration:450, delay:S+150});
+  // harfler sarsılır
+  document.querySelectorAll('#logo .f').forEach((e,i) => e.animate(
+    [{transform:'none'},{transform:`translateY(${i%2?-.05:.05}em) rotate(${i%2?-4:4}deg)`},{transform:'none'}],
+    {duration:420, delay:S+180+i*20, easing:'ease-out', composite:'add'}));
+  // miyav: kedinin çıkışından yarım saniye önce
+  setTimeout(() => { if(ok()) meow(); }, S + 650 + 120 - 500);
+  await wait(S+650); if(!ok()) return;
+
+  // 7) kedi harflerin arkasından bakar
+  const peekSvg = $('#catHead');
+  peekSvg.animate([
+    {transform:'translateY(105%)'},
+    {transform:'translateY(-6%)', offset:.7},
+    {transform:'translateY(0)'}
+  ], {duration:550, easing:'cubic-bezier(.2,.9,.3,1.2)', fill:'forwards'});
+  enter($('#pwA'), [{opacity:0, transform:'translateY(.08em) scale(.4)'},{opacity:1, transform:'none'}], {duration:350, delay:250, easing:'cubic-bezier(.3,1.6,.5,1)'});
+  enter($('#pwB'), [{opacity:0, transform:'translateY(.08em) scale(.4)'},{opacity:1, transform:'none'}], {duration:350, delay:330, easing:'cubic-bezier(.3,1.6,.5,1)'});
+  // izler yavaşça kaybolur
+  scratchG.animate([{opacity:1},{opacity:0}], {duration:1400, delay:400, fill:'forwards'});
+  await wait(600); if(!ok()) return;
+  $('#peek').classList.add('blink');
+
+  // 8) final vurgusu
+  $('#heart').animate([{transform:'translateY(.06em) scale(1)'},{transform:'translateY(.06em) scale(1.2)'},{transform:'translateY(.06em) scale(1)'},{transform:'translateY(.06em) scale(1.12)'},{transform:'translateY(.06em) scale(1)'}],{duration:900});
+  $('#plus').animate([{textShadow:'0 0 0 rgba(255,255,255,0)'},{textShadow:'0 0 .25em rgba(255,255,255,.9)'},{textShadow:'0 .03em .08em rgba(0,0,0,.18)'}],{duration:1200, delay:200});
+}
+
+// ---- miyav sesi (Web Audio ile sentezlenir, dosya gerekmez) ----
+let actx = null;
+function unlockAudio(){
+  try{
+    if(!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    if(actx.state === 'suspended') actx.resume();
+  }catch(e){}
+}
+function meow(ctx){
+  if(!ctx){ unlockAudio(); ctx = actx; }
+  if(!ctx) return;
+  // tatlı yavru kedi sesi: "mii-yaav" + küçük bir "mew"
+  mew(ctx, ctx.currentTime + 0.02, 0.62, [780, 1250, 1180, 820], 1);
+  mew(ctx, ctx.currentTime + 0.78, 0.28, [950, 1300, 1000], 0.55);
+}
+function mew(ctx, t, dur, pitch, vol){
+  // yumuşak, vızıltısız ton: azalan harmonikler
+  const real = new Float32Array([0, 1, .55, .3, .16, .08, .04]);
+  const wave = ctx.createPeriodicWave(real, new Float32Array(real.length));
+  const o = ctx.createOscillator(); o.setPeriodicWave(wave);
+  const f = o.frequency, n = pitch.length - 1;
+  f.setValueAtTime(pitch[0], t);
+  pitch.slice(1).forEach((hz, k) => {
+    const at = t + dur * ((k + 1) / n) * (k + 1 === n ? 1 : .8);
+    k + 1 === n ? f.exponentialRampToValueAtTime(hz, at) : f.linearRampToValueAtTime(hz, at);
+  });
+  // hafif titreşim
+  const lfo = ctx.createOscillator(); lfo.frequency.value = 8;
+  const lg = ctx.createGain(); lg.gain.value = 18;
+  lfo.connect(lg); lg.connect(f);
+
+  // "m" ile başlayıp ağız açılır, sonda kapanır
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 2;
+  lp.frequency.setValueAtTime(900, t);
+  lp.frequency.exponentialRampToValueAtTime(5000, t + dur * .3);
+  lp.frequency.exponentialRampToValueAtTime(1400, t + dur);
+  // parlak, tatlı formant
+  const pk = ctx.createBiquadFilter(); pk.type = 'peaking'; pk.Q.value = 3; pk.gain.value = 9;
+  pk.frequency.setValueAtTime(1800, t);
+  pk.frequency.linearRampToValueAtTime(2600, t + dur * .35);
+  pk.frequency.linearRampToValueAtTime(1500, t + dur);
+
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0.0001, t);
+  env.gain.exponentialRampToValueAtTime(0.32 * vol, t + 0.06);
+  env.gain.setValueAtTime(0.32 * vol, t + dur * .55);
+  env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+
+  const comp = ctx.createDynamicsCompressor();
+  o.connect(lp); lp.connect(pk); pk.connect(env); env.connect(comp); comp.connect(ctx.destination);
+  [o, lfo].forEach(x => { x.start(t); x.stop(t + dur + 0.05); });
+}
+addEventListener('pointerdown', unlockAudio);
+addEventListener('keydown', unlockAudio);
+
+$('#replay').addEventListener('click', e => { e.stopPropagation(); start(); });
+addEventListener('keydown', e => { if(['r','R',' ','Enter'].includes(e.key)){ e.preventDefault(); start(); } });
+$('#startBtn').addEventListener('click', e => { e.stopPropagation(); start(); });
+function start(){ unlockAudio(); $('#startScreen').style.display='none'; run(); }
+
+// fare hareketsizken imleci ve butonu gizle (sunum için)
+let idleT;
+const wake = () => { document.body.classList.remove('idle'); clearTimeout(idleT); idleT = setTimeout(() => document.body.classList.add('idle'), 2000); };
+addEventListener('mousemove', wake); wake();
+
+</script>
+</body>
+</html>
